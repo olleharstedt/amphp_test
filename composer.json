@@ -1,0 +1,9 @@
+{
+    "require": {
+        "amphp/amp": "^2.5",
+        "amphp/socket": "^1.1",
+        "amphp/http-client": "^4.5",
+        "amphp/file": "^1.0",
+        "vimeo/psalm": "^3.14"
+    }
+}
