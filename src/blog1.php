@@ -111,12 +111,9 @@ class FileSaver
     public function saveFile(string $path, int $file): generator
     {
         $logger = $this->logger;
-        //yield new Amp\LazyPromise(static function() use ($path, $logger) { $logger->write('Saving file ' . $path); });
         yield new WriteIO($logger, 'Saving file ' . $path);
-        //$request = new Request('https://cloudfiles.fooservice.com/', 'POST');
         $request = new Request('https://google.com', 'POST');
         $request->setBody($file);
-        //$response = yield $this->httpClient->request($request);
         $response = yield new HttpIO($this->httpClient, $request);
         if ($response->getStatus() === 200) {
             yield new WriteIO($logger, 'Successfully saved file ' . $path);
@@ -132,8 +129,14 @@ Loop::run(function() {
     $httpClient = HttpClientBuilder::buildDefault();
     $logger = yield Amp\File\open('log.txt', "c+");
     $fileSaver = new FileSaver($logger, $httpClient);
-    //yield from $fileSaver->saveFile('moo', 0);
-    //return;
+    yield from $fileSaver->saveFile('moo', 0);
+});
+
+function test(): generator
+{
+    $httpClient = HttpClientBuilder::buildDefault();
+    $logger = yield Amp\File\open('log.txt', "c+");
+    $fileSaver = new FileSaver($logger, $httpClient);
 
     $effects = [
         [
@@ -147,14 +150,13 @@ Loop::run(function() {
     ];
     $gen = $fileSaver->saveFile('moo', 0);
     testGenerator($gen, $effects);
-});
+}
 
 function testGenerator(generator $gen, array $effects): void
 {
     foreach ($gen as $i => $promise) {
         if ($effects[$i]['yield']) {
             if (!$promise->equals($effects[$i]['yield'])) {
-                //var_dump($promise);
                 throw new Exception('Failed test');
             }
         }
