@@ -76,7 +76,7 @@ class HttpIO implements IO
 
     public function equals(IO $io): bool
     {
-        return $io === $this->request;
+        return $io->request === $this->request;
     }
 
     public function onResolve(callable $onResolved)

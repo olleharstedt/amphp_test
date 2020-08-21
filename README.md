@@ -3,3 +3,6 @@
 * Typed effects with Psalm and `@return Generator<WriteIO>`
 * Pipelines instead of MVC
 * Framework which never injects anything effectful
+
+* Type-state
+* No-alias OR immutable
