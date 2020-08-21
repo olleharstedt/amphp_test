@@ -59,6 +59,22 @@ class WriteIO implements IO
     }
 }
 
+class Writer
+{
+    /** @var File */
+    private $handle;
+
+    public function __construct(File $handle)
+    {
+        $this->handle = $handle;
+    }
+
+    public function write(string $message): WriteIO
+    {
+        return new WriteIO($this->handle, $message);
+    }
+}
+
 class HttpIO implements IO
 {
     /** @var Request */
@@ -91,18 +107,33 @@ class HttpIO implements IO
     }
 }
 
+class Http
+{
+    /** @var HttpClient */
+    private $client;
+    public function __construct(HttpClient $client)
+    {
+        $this->client = $client;
+    }
+
+    public function request(Request $request): HttpIO
+    {
+        return new HttpIO($this->client, $request);
+    }
+}
+
 class FileSaver
 {
-    /** @var File */
-    private $logger;
+    /** @var Writer */
+    private $writer;
 
-    /** @var HttpClient */
-    private $httpClient;
+    /** @var Http */
+    private $http;
 
-    public function __construct(File $logger, HttpClient $httpClient)
+    public function __construct(Writer $writer, Http $http)
     {
-        $this->logger = $logger;
-        $this->httpClient = $httpClient;
+        $this->writer = $writer;
+        $this->http = $http;
     }
 
     /**
@@ -110,16 +141,18 @@ class FileSaver
      */
     public function saveFile(string $path, int $file): generator
     {
-        $logger = $this->logger;
-        yield new WriteIO($logger, 'Saving file ' . $path);
+        yield $this->writer->write('Saving file ' . $path);
+
         $request = new Request('https://google.com', 'POST');
         $request->setBody($file);
-        $response = yield new HttpIO($this->httpClient, $request);
+
+        $response = yield $this->http->request($request);
+
         if ($response->getStatus() === 200) {
-            yield new WriteIO($logger, 'Successfully saved file ' . $path);
+            yield $this->writer->write('Successfully saved file ' . $path);
         } else {
             $msg = 'Failed to save file ' . $path;
-            yield new WriteIO($logger, $msg);
+            yield $this->writer->write($msg);
             throw new Exception($msg);
         }
     }
@@ -127,25 +160,29 @@ class FileSaver
 
 Loop::run(function() {
     $httpClient = HttpClientBuilder::buildDefault();
-    $logger = yield Amp\File\open('log.txt', "c+");
-    $fileSaver = new FileSaver($logger, $httpClient);
+    $http = new Http($httpClient);
+    $logFile = yield Amp\File\open('log.txt', "c+");
+    $writer = new Writer($logFile);
+    $fileSaver = new FileSaver($writer, $http);
     yield from $fileSaver->saveFile('moo', 0);
 });
 
 function test(): generator
 {
     $httpClient = HttpClientBuilder::buildDefault();
-    $logger = yield Amp\File\open('log.txt', "c+");
-    $fileSaver = new FileSaver($logger, $httpClient);
+    $http = new Http($httpClient);
+    $logFile = yield Amp\File\open('log.txt', "c+");
+    $writer = new Writer($logFile);
+    $fileSaver = new FileSaver($writer, $http);
 
     $effects = [
         [
             'yield' => new WriteIO(null, 'Saving file moo'),
-            'send' => null
+            'send'  => null
         ],
         [
             'yield' => null,
-            'send' => new class { public function getStatus(): int { return 200; } }
+            'send'  => new class { public function getStatus(): int { return 200; } }
         ]
     ];
     $gen = $fileSaver->saveFile('moo', 0);
