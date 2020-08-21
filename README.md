@@ -2,3 +2,4 @@
 * Mocking effects instead of dependencies
 * Typed effects with Psalm and `@return Generator<WriteIO>`
 * Pipelines instead of MVC
+* Framework which never injects anything effectful
