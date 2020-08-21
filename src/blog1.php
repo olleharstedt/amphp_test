@@ -10,10 +10,16 @@ use Amp\ByteStream\ClosedException;
 use Amp\File\File;
 use Amp\LazyPromise;
 
+/**
+ * @template A
+ */
 interface IO extends Amp\Promise
 {
-    public function equals(IO $io): bool;
-    public function __toString(): string;
+    /**
+     * @param A $io
+     * @return bool
+     */
+    public function equals($io);
 }
 
 class WriteIO implements IO
@@ -42,7 +48,7 @@ class WriteIO implements IO
         $this->promise->onResolve($onResolved);
     }
 
-    public function equals(IO $io): bool
+    public function equals($io): bool
     {
         return (string) $io === (string) $this;
     }
@@ -74,7 +80,7 @@ class HttpIO implements IO
         );
     }
 
-    public function equals(IO $io): bool
+    public function equals($io): bool
     {
         return $io->request === $this->request;
     }
@@ -82,12 +88,6 @@ class HttpIO implements IO
     public function onResolve(callable $onResolved)
     {
         $this->promise->onResolve($onResolved);
-    }
-
-    public function __toString(): string
-    {
-        //return (string) $request;
-        return '';
     }
 }
 
